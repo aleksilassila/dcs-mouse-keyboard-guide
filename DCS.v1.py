@@ -5,6 +5,9 @@ if starting:
 	freelook_toggle = False
 	k_toggle = False
 	axis_max = float(vJoy[0].axisMax)
+
+	def linear_map(value, x_min, x_max, y_min, y_max):
+		return y_min + (value - x_min) * (y_max - y_min) / (x_max - x_min)
 	
 	class VirtualAxis:
 		def __init__(self, axis_max, sensitivity, center_rate=0.0, linear_centering=False, use_falloff=False, always_center=False):
@@ -150,7 +153,7 @@ if starting:
 			
 			self.axis = [self.axis_roll, self.axis_pitch, self.pedal_speed, self.axis_pedal, self.axis_throttle, self.axis_brake_left, self.axis_brake_right, self.axis_zoom, self.axis_manual_zoom]
 
-		def update(self, freelook=False, alt_pressed=False, shift_pressed=False):
+		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False):
 			deltaX = mouse.deltaX
 			deltaY = mouse.deltaY
 
@@ -167,67 +170,19 @@ if starting:
 				if mouse.getButton(4):  # MOUSE 4
 				# if mouse.getButton(3):  # MOUSE 3
 					self.axis_pitch.set_trim(0)
-				
-				if mouse.wheel != 0:
+
+				if mouse.getPressed(2): # MOUSE 3
+					if self.axis_zoom.value < 6000 and self.axis_zoom.value > 2000:
+						self.axis_zoom.set_val(-11000)
+					else:
+						self.axis_zoom.set_val(5000)
+				elif mouse.wheel != 0:
 					if keyboard.getKeyDown(Key.LeftShift):
 						self.axis_manual_zoom.move(mouse.wheel)
 					else:
 						self.axis_zoom.move(mouse.wheel)
 
-				if keyboard.getKeyDown(Key.Z):
-					vJoy[0].setButton(11, keyboard.getKeyDown(Key.W))
-					vJoy[0].setButton(12, keyboard.getKeyDown(Key.S))
-					vJoy[0].setButton(13, keyboard.getKeyDown(Key.A))
-					vJoy[0].setButton(14, keyboard.getKeyDown(Key.D))
-					vJoy[0].setButton(15, keyboard.getKeyDown(Key.Q))
-					vJoy[0].setButton(16, keyboard.getKeyDown(Key.E))
-				elif keyboard.getKeyDown(Key.X):
-					vJoy[0].setButton(17, keyboard.getKeyDown(Key.W))
-					vJoy[0].setButton(18, keyboard.getKeyDown(Key.S))
-					vJoy[0].setButton(19, keyboard.getKeyDown(Key.A))
-					vJoy[0].setButton(20, keyboard.getKeyDown(Key.D))
-					vJoy[0].setButton(21, keyboard.getKeyDown(Key.Q))
-					vJoy[0].setButton(22, keyboard.getKeyDown(Key.E))
-				elif keyboard.getKeyDown(Key.C):
-					vJoy[0].setButton(23, keyboard.getKeyDown(Key.W))
-					vJoy[0].setButton(24, keyboard.getKeyDown(Key.S))
-					vJoy[0].setButton(25, keyboard.getKeyDown(Key.A))
-					vJoy[0].setButton(26, keyboard.getKeyDown(Key.D))
-					vJoy[0].setButton(27, keyboard.getKeyDown(Key.Q))
-					vJoy[0].setButton(28, keyboard.getKeyDown(Key.E))
-				elif keyboard.getKeyDown(Key.V):
-					vJoy[1].setButton(0, keyboard.getKeyDown(Key.W))
-					vJoy[1].setButton(1, keyboard.getKeyDown(Key.S))
-					vJoy[1].setButton(2, keyboard.getKeyDown(Key.A))
-					vJoy[1].setButton(3, keyboard.getKeyDown(Key.D))
-					vJoy[1].setButton(4, keyboard.getKeyDown(Key.Q))
-					vJoy[1].setButton(5, keyboard.getKeyDown(Key.E))
-				else:
-					vJoy[0].setButton(11, False)
-					vJoy[0].setButton(12, False)
-					vJoy[0].setButton(13, False)
-					vJoy[0].setButton(14, False)
-					vJoy[0].setButton(15, False)
-					vJoy[0].setButton(16, False)
-					vJoy[0].setButton(17, False)
-					vJoy[0].setButton(18, False)
-					vJoy[0].setButton(19, False)
-					vJoy[0].setButton(20, False)
-					vJoy[0].setButton(21, False)
-					vJoy[0].setButton(22, False)
-					vJoy[0].setButton(23, False)
-					vJoy[0].setButton(24, False)
-					vJoy[0].setButton(25, False)
-					vJoy[0].setButton(26, False)
-					vJoy[0].setButton(27, False)
-					vJoy[0].setButton(28, False)
-					vJoy[1].setButton(0, False)
-					vJoy[1].setButton(1, False)
-					vJoy[1].setButton(2, False)
-					vJoy[1].setButton(3, False)
-					vJoy[1].setButton(4, False)
-					vJoy[1].setButton(5, False)
-
+				if control_layer:
 					# throttle control
 					if keyboard.getKeyDown(Key.W):
 						self.axis_throttle.move(-1)
@@ -267,7 +222,7 @@ if starting:
 			vJoy[0].rx = self.axis_brake_left.value
 			vJoy[0].ry = self.axis_brake_right.value
 			vJoy[0].rz = self.axis_pedal.value
-			vJoy[0].slider = self.axis_zoom.value
+			vJoy[0].slider =  linear_map(self.axis_zoom.value, -axis_max, axis_max, -axis_max, 11000)
 			vJoy[1].slider = self.axis_manual_zoom.value
 			# vJoy[0].setButton(29, self.axis_manual_zoom.increment)
 			# vJoy[0].setButton(30, self.axis_manual_zoom.decrement)
@@ -275,6 +230,8 @@ if starting:
 			# diagnostics.watch(self.axis_manual_zoom.value)
 			# diagnostics.watch(self.axis_manual_zoom.increment)
 			# diagnostics.watch(self.axis_manual_zoom.decrement)
+
+			diagnostics.watch(vJoy[0].slider)
 
 			self.post_update()
 
@@ -318,7 +275,7 @@ if starting:
 			
 			self.axis = [self.axis_roll, self.axis_pitch, self.axis_pedal, self.throttle_speed, self.axis_throttle1, self.axis_throttle2]
 
-		def update(self, freelook=False, alt_pressed=False, shift_pressed=False):
+		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False):
 			deltaX = mouse.deltaX
 			deltaY = mouse.deltaY
 
@@ -437,6 +394,9 @@ elif keyboard.getPressed(Key.Grave):
 		vJoy[0].setPressed(29)
 	freelook_toggle = False
 
+control_layer = not keyboard.getKeyDown(Key.Z) and not keyboard.getKeyDown(Key.X) and not keyboard.getKeyDown(Key.C) and not keyboard.getKeyDown(Key.V)
+freelook = alt_pressed or freelook_toggle
+
 if k_toggle:
 	# K Binds
 	if keyboard.getKeyDown(Key.D1):
@@ -451,6 +411,7 @@ if k_toggle:
 	if keyboard.getKeyDown(Key.D5):
 		active_profile = profiles["F-16C"]
 
+	# Match any keypress
 	for key in Key.__dict__:
 		#diagnostics.debug(key)
 		#diagnostics.debug(isinstance(Key.__dict__[key], Key))
@@ -462,7 +423,79 @@ if k_toggle:
 			diagnostics.debug(Key.__dict__[key])
 			k_toggle = False
 			break
-else:
+
+if not k_toggle and not freelook:
+	if keyboard.getKeyDown(Key.Z): # 40-
+		vJoy[0].setButton(40, keyboard.getKeyDown(Key.W))
+		vJoy[0].setButton(41, keyboard.getKeyDown(Key.S))
+		vJoy[0].setButton(42, keyboard.getKeyDown(Key.A))
+		vJoy[0].setButton(43, keyboard.getKeyDown(Key.D))
+		vJoy[0].setButton(44, keyboard.getKeyDown(Key.Q))
+		vJoy[0].setButton(45, keyboard.getKeyDown(Key.E))
+		vJoy[0].setButton(46, keyboard.getKeyDown(Key.F))
+		vJoy[0].setButton(47, keyboard.getKeyDown(Key.R))
+		# vJoy[0].setButton(48, keyboard.getKeyDown(Key.G))
+		# vJoy[0].setButton(49, keyboard.getKeyDown(Key.T))
+		vJoy[0].setButton(50, keyboard.getKeyDown(Key.D1))
+		vJoy[0].setButton(51, keyboard.getKeyDown(Key.D2))
+		vJoy[0].setButton(52, keyboard.getKeyDown(Key.D3))
+		vJoy[0].setButton(53, keyboard.getKeyDown(Key.D4))
+		# vJoy[0].setButton(54, keyboard.getKeyDown(Key.D5))
+	elif keyboard.getKeyDown(Key.X): # 60-
+		vJoy[0].setButton(60, keyboard.getKeyDown(Key.W))
+		vJoy[0].setButton(61, keyboard.getKeyDown(Key.S))
+		vJoy[0].setButton(62, keyboard.getKeyDown(Key.A))
+		vJoy[0].setButton(63, keyboard.getKeyDown(Key.D))
+		vJoy[0].setButton(64, keyboard.getKeyDown(Key.Q))
+		vJoy[0].setButton(65, keyboard.getKeyDown(Key.E))
+		vJoy[0].setButton(66, keyboard.getKeyDown(Key.F))
+		vJoy[0].setButton(67, keyboard.getKeyDown(Key.R))
+		# vJoy[0].setButton(68, keyboard.getKeyDown(Key.G))
+		# vJoy[0].setButton(69, keyboard.getKeyDown(Key.T))
+		vJoy[0].setButton(70, keyboard.getKeyDown(Key.D1))
+		vJoy[0].setButton(71, keyboard.getKeyDown(Key.D2))
+		vJoy[0].setButton(72, keyboard.getKeyDown(Key.D3))
+		vJoy[0].setButton(73, keyboard.getKeyDown(Key.D4))
+		# vJoy[0].setButton(74, keyboard.getKeyDown(Key.D5))
+	elif keyboard.getKeyDown(Key.C): # 80-
+		vJoy[0].setButton(80, keyboard.getKeyDown(Key.W))
+		vJoy[0].setButton(81, keyboard.getKeyDown(Key.S))
+		vJoy[0].setButton(82, keyboard.getKeyDown(Key.A))
+		vJoy[0].setButton(83, keyboard.getKeyDown(Key.D))
+		vJoy[0].setButton(84, keyboard.getKeyDown(Key.Q))
+		vJoy[0].setButton(85, keyboard.getKeyDown(Key.E))
+		vJoy[0].setButton(86, keyboard.getKeyDown(Key.F))
+		vJoy[0].setButton(87, keyboard.getKeyDown(Key.R))
+		# vJoy[0].setButton(88, keyboard.getKeyDown(Key.G))
+		# vJoy[0].setButton(89, keyboard.getKeyDown(Key.T))
+		vJoy[0].setButton(90, keyboard.getKeyDown(Key.D1))
+		vJoy[0].setButton(91, keyboard.getKeyDown(Key.D2))
+		vJoy[0].setButton(92, keyboard.getKeyDown(Key.D3))
+		vJoy[0].setButton(93, keyboard.getKeyDown(Key.D4))
+		# vJoy[0].setButton(94, keyboard.getKeyDown(Key.D5))
+	elif keyboard.getKeyDown(Key.V): # 100-
+		vJoy[0].setButton(100, keyboard.getKeyDown(Key.W))
+		vJoy[0].setButton(101, keyboard.getKeyDown(Key.S))
+		vJoy[0].setButton(102, keyboard.getKeyDown(Key.A))
+		vJoy[0].setButton(103, keyboard.getKeyDown(Key.D))
+		vJoy[0].setButton(104, keyboard.getKeyDown(Key.Q))
+		vJoy[0].setButton(105, keyboard.getKeyDown(Key.E))
+		vJoy[0].setButton(106, keyboard.getKeyDown(Key.F))
+		vJoy[0].setButton(107, keyboard.getKeyDown(Key.R))
+		# vJoy[0].setButton(108, keyboard.getKeyDown(Key.G))
+		# vJoy[0].setButton(109, keyboard.getKeyDown(Key.T))
+		vJoy[0].setButton(110, keyboard.getKeyDown(Key.D1))
+		vJoy[0].setButton(111, keyboard.getKeyDown(Key.D2))
+		vJoy[0].setButton(112, keyboard.getKeyDown(Key.D3))
+		vJoy[0].setButton(113, keyboard.getKeyDown(Key.D4))
+		# vJoy[0].setButton(114, keyboard.getKeyDown(Key.D5))
+
+if control_layer or k_toggle or freelook:
+	for i in range(40, 128):
+		vJoy[0].setButton(i, False)
+
+# Default layer
+if control_layer and not k_toggle and not freelook:
 	vJoy[0].setButton(0, keyboard.getKeyDown(Key.D0))
 	vJoy[0].setButton(1, keyboard.getKeyDown(Key.D1))
 	vJoy[0].setButton(2, keyboard.getKeyDown(Key.D2))
@@ -474,12 +507,18 @@ else:
 	vJoy[0].setButton(8, keyboard.getKeyDown(Key.D8))
 	vJoy[0].setButton(9, keyboard.getKeyDown(Key.D9))
 	vJoy[0].setButton(10, mouse.getButton(3))
+else:
+	for i in range(0, 10):
+		vJoy[0].setButton(i, False)
+	vJoy[0].setButton(10, False)
 
 if keyboard.getPressed(Key.K):
 	k_toggle = not k_toggle
 
 diagnostics.watch(k_toggle)
+diagnostics.watch(freelook)
+diagnostics.watch(control_layer)
 diagnostics.watch(active_profile.__class__.__name__ if active_profile else None)
 
 if active_profile is not None:
-	active_profile.update(freelook=(alt_pressed or freelook_toggle), alt_pressed=alt_pressed, shift_pressed=shift_pressed)
+	active_profile.update(freelook=freelook, alt_pressed=alt_pressed, shift_pressed=shift_pressed, control_layer=control_layer)
