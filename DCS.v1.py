@@ -2,53 +2,45 @@ if starting:
 	system.setThreadTiming(TimingTypes.HighresSystemTimer)
 	system.threadExecutionInterval = 20
 
-	freelook_toggle = False
+	freelook_toggle = True
 	k_toggle = False
+	control_mode = 1
 	axis_max = float(vJoy[0].axisMax)
 
 	def linear_map(value, x_min, x_max, y_min, y_max):
 		return y_min + (value - x_min) * (y_max - y_min) / (x_max - x_min)
 	
 	class VirtualAxis:
-		def __init__(self, axis_max, sensitivity, center_rate=0.0, linear_centering=False, use_falloff=False, always_center=False):
+		def __init__(self, axis_max, sensitivity=1.0, trim_value=None, linear_rate=0.0, constant_rate=0.0):
 			self.value = 0.0
-			self.trim_value = 0.0
+			self.trim_value = trim_value
 			self.axis_max = float(axis_max)
 			self.sensitivity = sensitivity
-			self.center_rate = center_rate
-			self.linear_centering = linear_centering
-			self.use_falloff = use_falloff
-			self.always_center = always_center
+			self.linear_rate = linear_rate
+			self.constant_rate = constant_rate
 			self.did_move = False
 
 		def move(self, delta):
+			trim_diff = (self.trim_value - self.value) if self.trim_value is not None else 0
+
+			constant_component = self.constant_rate * (1 if trim_diff > 0 else -1) if self.constant_rate != 0 else 0
+			linear_component = trim_diff * self.linear_rate
+
+			self.value = self.value + delta * self.sensitivity + min(abs(trim_diff), max(-abs(trim_diff), linear_component + constant_component))
 			self.did_move = True
-			if self.use_falloff:
-				ratio = abs(self.value) / self.axis_max
-				mult = 1.0 - (0.5 * (ratio ** 2))
-				self.value += delta * self.sensitivity * mult
-			else:
-				self.value += delta * self.sensitivity
+
 			self.clamp()
 
 		def set_trim(self, new_trim=None):
-			if new_trim is None:
-				self.trim_value = self.value
-			else:
-				self.trim_value = new_trim
+			self.trim_value = new_trim
 			self.clamp()
 
 		def offset_trim(self, delta):
+			if self.trim_value is None:
+				self.trim_value = 0.0
 			self.trim_value += delta
 			self.value += delta
 			self.clamp()
-
-		def apply_centering(self):
-			if self.center_rate > 0 and (self.always_center or not self.did_move):
-				# if self.linear_centering:
-				self.value = self.trim_value + (self.value - self.trim_value) * (1.0 - self.center_rate)
-				# else:
-				# 	self.value = self.trim_value + (self.value - self.trim_value) / (1.0 + self.center_rate)
 
 		def set_val(self, val):
 			self.value = val
@@ -59,14 +51,15 @@ if starting:
 				self.value = self.axis_max
 			elif self.value < -self.axis_max:
 				self.value = -self.axis_max
-			
-			if self.trim_value > self.axis_max:
+
+			if self.trim_value is not None and self.trim_value > self.axis_max:
 				self.trim_value = self.axis_max
-			elif self.trim_value < -self.axis_max:
+			elif self.trim_value is not None and self.trim_value < -self.axis_max:
 				self.trim_value = -self.axis_max
 
 		def post_update(self):
-			self.apply_centering()
+			if not self.did_move:
+				self.move(0)
 			self.did_move = False
 
 	class VirtualButtonAxis:
@@ -123,53 +116,58 @@ if starting:
 
 	class AirplaneProfile(DCSProfile):
 		def __init__(self):
+			self.pitch_sensitivity = 8
+			self.pitch_linear_rate = 0.015
+			self.pitch_constant_rate = 25
 			self.roll_sensitivity = 8
-			self.pitch_sensitivity = 15
-			self.roll_center_rate = 0.015
-			self.pitch_center_rate = 0.3
+			self.roll_linear_rate = 0.015
+			self.roll_constant_rate = 25
 			self.brakes_multiplier = 1
 
 		def setup(self):
-			self.axis_roll = VirtualAxis(axis_max, sensitivity=self.roll_sensitivity, center_rate=self.roll_center_rate, linear_centering=True, use_falloff=True, always_center=True)
-			self.axis_pitch = VirtualAxis(axis_max, sensitivity=self.pitch_sensitivity, center_rate=self.pitch_center_rate, linear_centering=True, use_falloff=True, always_center=True)
+			self.axis_pitch = VirtualAxis(axis_max, sensitivity=8, linear_rate=0.015, constant_rate=15)
+			self.axis_roll = VirtualAxis(axis_max, sensitivity=8, linear_rate=0.015, constant_rate=15, trim_value=0.0)
 			
-			self.pedal_speed = VirtualAxis(1.0, sensitivity=0.1, center_rate=0.1)
-			self.axis_pedal = VirtualAxis(axis_max, sensitivity=200, center_rate=0.1, use_falloff=False)
+			self.pedal_speed = VirtualAxis(1.0, sensitivity=0.1, constant_rate=0.1)
+			self.axis_pedal = VirtualAxis(axis_max, sensitivity=200, linear_rate=0.015, constant_rate=20)
 			
 			self.axis_throttle = VirtualAxis(axis_max, sensitivity=200)
 			self.axis_throttle.set_val(axis_max)
 			
-			self.axis_brake_left = VirtualAxis(axis_max * self.brakes_multiplier, sensitivity=400, center_rate=0.05)
+			self.axis_brake_left = VirtualAxis(axis_max * self.brakes_multiplier, sensitivity=600, constant_rate=600)
 			self.axis_brake_left.set_val(-axis_max * self.brakes_multiplier)
 			self.axis_brake_left.set_trim(-axis_max * self.brakes_multiplier)
 			
-			self.axis_brake_right = VirtualAxis(axis_max * self.brakes_multiplier, sensitivity=400, center_rate=0.05)
+			self.axis_brake_right = VirtualAxis(axis_max * self.brakes_multiplier, sensitivity=600, constant_rate=600)
 			self.axis_brake_right.set_val(-axis_max * self.brakes_multiplier)
 			self.axis_brake_right.set_trim(-axis_max * self.brakes_multiplier)
 
-			self.axis_zoom = VirtualAxis(axis_max, sensitivity=-20, use_falloff=False)
+			self.axis_zoom = VirtualAxis(axis_max, sensitivity=-20)
+			self.axis_zoom_out = VirtualAxis(axis_max, constant_rate=400, linear_rate=0.5, trim_value=self.axis_zoom.value)
 			# self.axis_manual_zoom = VirtualButtonAxis(decay=20, max_val=1000)
-			self.axis_manual_zoom = VirtualAxis(axis_max, sensitivity=20, use_falloff=False)
+			self.axis_manual_zoom = VirtualAxis(axis_max, sensitivity=20)
 			
-			self.axis = [self.axis_roll, self.axis_pitch, self.pedal_speed, self.axis_pedal, self.axis_throttle, self.axis_brake_left, self.axis_brake_right, self.axis_zoom, self.axis_manual_zoom]
+			self.axis = [self.axis_roll, self.axis_pitch, self.pedal_speed, self.axis_pedal, self.axis_throttle, self.axis_brake_left, self.axis_brake_right, self.axis_zoom, self.axis_zoom_out, self.axis_manual_zoom]
 
-		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False):
+		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False, control_mode=1):
 			deltaX = mouse.deltaX
 			deltaY = mouse.deltaY
 
 			if not freelook:
 				# mouse axis
-				if deltaX:
+				if control_mode == 1:
+					self.axis_pitch.set_trim(0 if mouse.getButton(4) else None)
 					self.axis_roll.move(deltaX)
-
-				if deltaY:
 					self.axis_pitch.move(-deltaY)
+				elif control_mode == 2:
+					self.axis_pitch.set_trim(0)
+					self.axis_pedal.set_trim(0 if mouse.getButton(4) else None)
+					self.axis_pedal.move(deltaX / 50)
 
 				# Y axis trim logic
-				self.axis_pitch.set_trim()
-				if mouse.getButton(4):  # MOUSE 4
-				# if mouse.getButton(3):  # MOUSE 3
-					self.axis_pitch.set_trim(0)
+				# if mouse.getButton(4):  # MOUSE 4
+				# # if mouse.getButton(3):  # MOUSE 3
+				# 	self.axis_pitch.set_trim(0)
 
 				if mouse.getPressed(2): # MOUSE 3
 					if self.axis_zoom.value < 6000 and self.axis_zoom.value > 2000:
@@ -191,11 +189,13 @@ if starting:
 					
 					# pedal control
 					if keyboard.getKeyDown(Key.Q):
-						self.axis_pedal.move(-1)
-						self.axis_brake_left.move(self.brakes_multiplier)
+						if not keyboard.getKeyDown(Key.E):
+							self.axis_pedal.move(-2)
+						self.axis_brake_left.move(self.brakes_multiplier * 2)
 					if keyboard.getKeyDown(Key.E):
-						self.axis_pedal.move(1)
-						self.axis_brake_right.move(self.brakes_multiplier)
+						if not keyboard.getKeyDown(Key.Q):
+							self.axis_pedal.move(2)
+						self.axis_brake_right.move(self.brakes_multiplier * 2)
 					
 					if keyboard.getKeyDown(Key.A):
 						if shift_pressed:
@@ -215,6 +215,8 @@ if starting:
 						else:
 							self.axis_pedal.set_trim(0)
 
+			self.axis_zoom_out.trim_value = self.axis_zoom.value
+
 			# vJoy axis mapping
 			vJoy[0].x = self.axis_roll.value
 			vJoy[0].y = self.axis_pitch.value
@@ -222,7 +224,7 @@ if starting:
 			vJoy[0].rx = self.axis_brake_left.value
 			vJoy[0].ry = self.axis_brake_right.value
 			vJoy[0].rz = self.axis_pedal.value
-			vJoy[0].slider =  linear_map(self.axis_zoom.value, -axis_max, axis_max, -axis_max, 11000)
+			vJoy[0].slider = linear_map(self.axis_zoom_out.value, -axis_max, axis_max, -axis_max, 11000)
 			vJoy[1].slider = self.axis_manual_zoom.value
 			# vJoy[0].setButton(29, self.axis_manual_zoom.increment)
 			# vJoy[0].setButton(30, self.axis_manual_zoom.decrement)
@@ -232,6 +234,9 @@ if starting:
 			# diagnostics.watch(self.axis_manual_zoom.decrement)
 
 			diagnostics.watch(vJoy[0].slider)
+			diagnostics.watch(self.axis_pitch.value)
+			diagnostics.watch(self.axis_pitch.trim_value)
+			diagnostics.watch(self.pedal_speed.value)
 
 			self.post_update()
 
@@ -239,43 +244,44 @@ if starting:
 		def __init__(self):
 			super(F16CProfile, self).__init__()
 			self.pitch_sensitivity = 8
-			self.pitch_center_rate = 0.3
+			self.pitch_linear_rate = 100
 			self.roll_sensitivity = 8
-			self.roll_center_rate = 0.015
+			self.roll_linear_rate = 100
 			self.brakes_multiplier = 1
 
 	class A4ECProfile(AirplaneProfile):
 		def __init__(self):
 			super(A4ECProfile, self).__init__()
 			self.pitch_sensitivity = 13
-			self.pitch_center_rate = 0.03
+			self.pitch_linear_rate = 0.03
 			self.roll_sensitivity = 4
-			self.roll_center_rate = 0.015
+			self.roll_linear_rate = 0.015
 			self.brakes_multiplier = -1
 
 	class HelicopterProfile(DCSProfile):
 		def __init__(self):
 			self.pedal_sensitivity = 200
+			self.pitch_linear_rate = 0.03
+			self.roll_linear_rate = 0.0075
+			self.always_trim_pitch = True
 
 		def setup(self):
-			# self.axis_roll = VirtualAxis(axis_max, sensitivity=6, center_rate=0.015, use_falloff=True, always_center=True)
-			# self.axis_pitch = VirtualAxis(axis_max, sensitivity=6, center_rate=0.06, use_falloff=True, always_center=True)
-			self.axis_roll = VirtualAxis(axis_max, sensitivity=3, center_rate=0.0075, use_falloff=True, always_center=True)
-			self.axis_pitch = VirtualAxis(axis_max, sensitivity=3, center_rate=0.03, use_falloff=True, always_center=True)
-			self.axis_pedal = VirtualAxis(axis_max, sensitivity=self.pedal_sensitivity, center_rate=0.02, use_falloff=False)
+			self.axis_pitch = VirtualAxis(axis_max, sensitivity=3, linear_rate=self.pitch_linear_rate, trim_value=0.0)
+			self.axis_roll = VirtualAxis(axis_max, sensitivity=3, linear_rate=self.roll_linear_rate, trim_value=0.0)
+			self.axis_pedal = VirtualAxis(axis_max, sensitivity=self.pedal_sensitivity, linear_rate=0.02)
 			
-			self.throttle_speed = VirtualAxis(1.0, sensitivity=0.025, center_rate=0.07)
+			self.throttle_speed = VirtualAxis(1.0, sensitivity=0.025, linear_rate=0.07)
 			self.throttle_speed.set_trim(0.5)
 			self.throttle_speed.set_val(0.5)
 			self.axis_throttle1 = VirtualAxis(axis_max, sensitivity=200)
 			self.axis_throttle1.set_val(axis_max)
 
-			self.axis_throttle2 = VirtualAxis(axis_max, sensitivity=200, center_rate=1, always_center=True)
+			self.axis_throttle2 = VirtualAxis(axis_max, sensitivity=200, linear_rate=1)
 			self.axis_throttle2.set_val(axis_max)
 			
 			self.axis = [self.axis_roll, self.axis_pitch, self.axis_pedal, self.throttle_speed, self.axis_throttle1, self.axis_throttle2]
 
-		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False):
+		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False, control_mode=1):
 			deltaX = mouse.deltaX
 			deltaY = mouse.deltaY
 
@@ -291,7 +297,8 @@ if starting:
 					self.axis_pedal.offset_trim(mouse.wheel * self.axis_pedal.sensitivity / 60)
 
 				# Y axis trim logic
-				self.axis_pitch.set_trim()
+				if self.always_trim_pitch:
+					self.axis_pitch.set_trim()
 				if mouse.getButton(4):  # MOUSE 4
 				# if mouse.getButton(3):  # MOUSE 3
 					self.axis_pitch.set_trim(0)
@@ -368,11 +375,19 @@ if starting:
 			super(OH6AProfile, self).__init__()
 			self.pedal_sensitivity = 350
 
+	class UH1HProfile(HelicopterProfile):
+		def __init__(self):
+			super(UH1HProfile, self).__init__()
+			self.always_trim_pitch = True
+			self.roll_linear_rate = 0
+			self.pedal_sensitivity = 350
+
 	profiles = dict([
 		("F-16C", F16CProfile()),
 		("A-4E-C", A4ECProfile()),
 		("UH-60L", UH60Profile()),
 		("OH-6A", OH6AProfile()),
+		("UH-1H", UH1HProfile()),
 	])
 
 	for profile in profiles.values():
@@ -392,7 +407,11 @@ if mouse.getPressed(3):
 elif keyboard.getPressed(Key.Grave):
 	if freelook_toggle:
 		vJoy[0].setPressed(29)
+	else:
+		control_mode = 1
 	freelook_toggle = False
+elif keyboard.getPressed(Key.T) and not freelook_toggle:
+	control_mode = 2
 
 control_layer = not keyboard.getKeyDown(Key.Z) and not keyboard.getKeyDown(Key.X) and not keyboard.getKeyDown(Key.C) and not keyboard.getKeyDown(Key.V)
 freelook = alt_pressed or freelook_toggle
@@ -404,6 +423,9 @@ if k_toggle:
 
 	if keyboard.getPressed(Key.D2):
 		active_profile = profiles["OH-6A"]
+
+	if keyboard.getKeyDown(Key.D3):
+		active_profile = profiles["UH-1H"]
 
 	if keyboard.getKeyDown(Key.D4):
 		active_profile = profiles["A-4E-C"]
@@ -521,4 +543,4 @@ diagnostics.watch(control_layer)
 diagnostics.watch(active_profile.__class__.__name__ if active_profile else None)
 
 if active_profile is not None:
-	active_profile.update(freelook=freelook, alt_pressed=alt_pressed, shift_pressed=shift_pressed, control_layer=control_layer)
+	active_profile.update(freelook=freelook, alt_pressed=alt_pressed, shift_pressed=shift_pressed, control_layer=control_layer, control_mode=control_mode)
