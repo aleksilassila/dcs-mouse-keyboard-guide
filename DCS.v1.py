@@ -1,3 +1,5 @@
+# Aleksi's DCS Script v1.0
+
 if starting:
 	system.setThreadTiming(TimingTypes.HighresSystemTimer)
 	system.threadExecutionInterval = 20
@@ -134,13 +136,13 @@ if starting:
 			self.axis_throttle = VirtualAxis(axis_max, sensitivity=200)
 			self.axis_throttle.set_val(axis_max)
 			
-			self.axis_brake_left = VirtualAxis(axis_max * self.brakes_multiplier, sensitivity=600, constant_rate=600)
-			self.axis_brake_left.set_val(-axis_max * self.brakes_multiplier)
-			self.axis_brake_left.set_trim(-axis_max * self.brakes_multiplier)
+			self.axis_brake_left = VirtualAxis(axis_max, sensitivity=600, constant_rate=600)
+			self.axis_brake_left.set_val(axis_max)
+			self.axis_brake_left.set_trim(axis_max)
 			
-			self.axis_brake_right = VirtualAxis(axis_max * self.brakes_multiplier, sensitivity=600, constant_rate=600)
-			self.axis_brake_right.set_val(-axis_max * self.brakes_multiplier)
-			self.axis_brake_right.set_trim(-axis_max * self.brakes_multiplier)
+			self.axis_brake_right = VirtualAxis(axis_max, sensitivity=600, constant_rate=600)
+			self.axis_brake_right.set_val(axis_max)
+			self.axis_brake_right.set_trim(axis_max)
 
 			self.axis_zoom = VirtualAxis(axis_max, sensitivity=-20)
 			self.axis_zoom_out = VirtualAxis(axis_max, constant_rate=400, linear_rate=0.5, trim_value=self.axis_zoom.value)
@@ -189,13 +191,13 @@ if starting:
 					
 					# pedal control
 					if keyboard.getKeyDown(Key.Q):
-						if not keyboard.getKeyDown(Key.E):
-							self.axis_pedal.move(-2)
-						self.axis_brake_left.move(self.brakes_multiplier * 2)
+						#if not keyboard.getKeyDown(Key.E):
+						#	self.axis_pedal.move(-2)
+						self.axis_brake_left.move(-2)
 					if keyboard.getKeyDown(Key.E):
-						if not keyboard.getKeyDown(Key.Q):
-							self.axis_pedal.move(2)
-						self.axis_brake_right.move(self.brakes_multiplier * 2)
+						#if not keyboard.getKeyDown(Key.Q):
+						#	self.axis_pedal.move(2)
+						self.axis_brake_right.move(-2)
 					
 					if keyboard.getKeyDown(Key.A):
 						if shift_pressed:
@@ -225,6 +227,7 @@ if starting:
 			vJoy[0].ry = self.axis_brake_right.value
 			vJoy[0].rz = self.axis_pedal.value
 			vJoy[0].slider = linear_map(self.axis_zoom_out.value, -axis_max, axis_max, -axis_max, 11000)
+			#vJoy[0].slider = self.axis_zoom_out.value
 			vJoy[1].slider = self.axis_manual_zoom.value
 			# vJoy[0].setButton(29, self.axis_manual_zoom.increment)
 			# vJoy[0].setButton(30, self.axis_manual_zoom.decrement)
@@ -263,7 +266,7 @@ if starting:
 			self.pedal_sensitivity = 200
 			self.pitch_linear_rate = 0.03
 			self.roll_linear_rate = 0.0075
-			self.always_trim_pitch = True
+			self.always_trim_everything = False
 
 		def setup(self):
 			self.axis_pitch = VirtualAxis(axis_max, sensitivity=3, linear_rate=self.pitch_linear_rate, trim_value=0.0)
@@ -296,12 +299,16 @@ if starting:
 				if mouse.wheel != 0:
 					self.axis_pedal.offset_trim(mouse.wheel * self.axis_pedal.sensitivity / 60)
 
+				self.axis_pitch.set_trim(0 if mouse.getButton(4) else None)
+				self.axis_roll.set_trim(0 if not self.always_trim_everything else 0 if mouse.getButton(4) else None)
+				if self.always_trim_everything:
+					self.axis_pedal.set_trim(0 if mouse.getButton(4) else None)
+
 				# Y axis trim logic
-				if self.always_trim_pitch:
-					self.axis_pitch.set_trim()
-				if mouse.getButton(4):  # MOUSE 4
-				# if mouse.getButton(3):  # MOUSE 3
-					self.axis_pitch.set_trim(0)
+				# if not self.always_trim_everything:
+				# 	self.axis_pitch.set_trim()
+				# if mouse.getButton(4): # MOUSE 5
+				# 	self.axis_pitch.set_trim(0)
 				
 				if keyboard.getKeyDown(Key.Z):
 					# secondary throttle control
@@ -378,9 +385,69 @@ if starting:
 	class UH1HProfile(HelicopterProfile):
 		def __init__(self):
 			super(UH1HProfile, self).__init__()
-			self.always_trim_pitch = True
-			self.roll_linear_rate = 0
+			self.always_trim_everything = True
 			self.pedal_sensitivity = 350
+
+	class LayerKey:
+		def __init__(self, key, index):
+			self.key = key
+			self.index = index
+			self.active_offset = 0
+			self.was_pressed = False
+	
+		def update(self, offset):
+			pressed = keyboard.getKeyDown(self.key)
+
+			if not self.was_pressed and pressed:
+				self.active_offset = 0
+
+			if not pressed:
+				self.active_offset = offset
+
+			vJoy[0].setButton(self.index + self.active_offset, pressed)
+
+	# class Layer:
+	# 	def __init__(self, range_start = 0, key = None):
+	# 		self.range_start = range_start
+	# 		self.key = key
+	# 		self.active = False
+
+	# 		self.layer_keys = [
+	# 			Key.W,
+	# 			Key.S,
+	# 			Key.A,
+	# 			Key.D,
+	# 			Key.Q,
+	# 			Key.E,
+	# 			Key.F,
+	# 			Key.R,
+	# 			# Key.G,
+	# 			# Key.T,
+	# 			Key.D1,
+	# 			Key.D2,
+	# 			Key.D3,
+	# 			Key.D4,
+	# 			# Key.D5,
+	# 		]
+		
+	# 	def update(self, can_activate):
+	# 		if can_activate and keyboard.getKeyDown(self.key):
+	# 			vJoy[0].setButton(self.range_start, keyboard.getKeyDown(Key.W))
+	# 			vJoy[0].setButton(self.range_start + 1, keyboard.getKeyDown(Key.S))
+	# 			vJoy[0].setButton(self.range_start + 2, keyboard.getKeyDown(Key.A))
+	# 			vJoy[0].setButton(self.range_start + 3, keyboard.getKeyDown(Key.D))
+	# 			vJoy[0].setButton(self.range_start + 4, keyboard.getKeyDown(Key.Q))
+	# 			vJoy[0].setButton(self.range_start + 5, keyboard.getKeyDown(Key.E))
+	# 			vJoy[0].setButton(self.range_start + 6, keyboard.getKeyDown(Key.F))
+	# 			vJoy[0].setButton(self.range_start + 7, keyboard.getKeyDown(Key.R))
+	# 			# vJoy[0].setButton(self.range_start + 8, keyboard.getKeyDown(Key.G))
+	# 			# vJoy[0].setButton(self.range_start + 9, keyboard.getKeyDown(Key.T))
+	# 			vJoy[0].setButton(self.range_start + 10, keyboard.getKeyDown(Key.D1))
+	# 			vJoy[0].setButton(self.range_start + 11, keyboard.getKeyDown(Key.D2))
+	# 			vJoy[0].setButton(self.range_start + 12, keyboard.getKeyDown(Key.D3))
+	# 			vJoy[0].setButton(self.range_start + 13, keyboard.getKeyDown(Key.D4))
+	# 			# vJoy[0].setButton(self.range_start + 14, keyboard.getKeyDown(Key.D5))
+				
 
 	profiles = dict([
 		("F-16C", F16CProfile()),
@@ -410,7 +477,7 @@ elif keyboard.getPressed(Key.Grave):
 	else:
 		control_mode = 1
 	freelook_toggle = False
-elif keyboard.getPressed(Key.T) and not freelook_toggle:
+elif keyboard.getPressed(Key.R) and not freelook_toggle:
 	control_mode = 2
 
 control_layer = not keyboard.getKeyDown(Key.Z) and not keyboard.getKeyDown(Key.X) and not keyboard.getKeyDown(Key.C) and not keyboard.getKeyDown(Key.V)
@@ -529,6 +596,7 @@ if control_layer and not k_toggle and not freelook:
 	vJoy[0].setButton(8, keyboard.getKeyDown(Key.D8))
 	vJoy[0].setButton(9, keyboard.getKeyDown(Key.D9))
 	vJoy[0].setButton(10, mouse.getButton(3))
+	vJoy[0].setButton(11, keyboard.getKeyDown(Key.R))
 else:
 	for i in range(0, 10):
 		vJoy[0].setButton(i, False)
