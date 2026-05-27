@@ -1,10 +1,8 @@
 # So you want to play DCS with keyboard and mouse? No problem.
 
-> This page is work in progress
+Contrary to popular belief, keyboard and mouse controls in DCS can be both enjoyable and competitive with HOTAS setups when done right. This repository aims to make flying in DCS using mouse and keyboard easy and effective with a FreePIE script. It also aims to explain where keyboard and mouse fall short of HOTAS and how to compensate for those shortcomings.
 
-Contrary to popular belief, keyboard and mouse controls in DCS can be both enjoyable and competitive with hotas setups when done right. This repository aims to make flying in DCS using mouse and keyboard easy and effective using a FreePIE script. It also aims to explain where keyboard and mouse fall short of hotas and how to compensate for those shortcomings.
-
-Features:
+**Features:**
 
 - Profiles for different aircraft
 - Separated mouse pitch/roll trim behavior and curves
@@ -12,7 +10,7 @@ Features:
 - Clickable cockpit mode for easy interaction with cockpit and alt-tabbing
 - Pedal control mode for easy taxi and takeoff
 
-Table of contents:
+**Table of contents:**
 
 - [1. FAQ](#faq)
 - [2. Getting started](#getting-started)
@@ -27,18 +25,23 @@ Table of contents:
   - [4.3 The two solutions](#the-two-solutions)
   - [4.4 Adjusting the curve variables](#adjusting-the-curve-variables)
   - [4.5 Pitch vs roll centering](#pitch-vs-roll-centering)
-- [5. Demo clips](#clips)
-- [6. About this repo](#about-this-repo)
+- [5. Keyboard layers for the win](#keyboard-layers-for-the-win)
+  - [5.1 What makes a good keyboard layout?](#what-makes-a-good-keyboard-layout)
+- [6. Flying helicopters with mouse and keyboard](#flying-helicopters-with-mouse-and-keyboard)
+- [7. Demo clips](#clips)
+- [8. About this repo](#about-this-repo)
 
 ## FAQ
 
-**How competitive is it with HOTAS?** Very competitive for fixed wing aircraft. By the time you are ready to start playing multiplayer, you should be able to do 90%-110% of what a HOTAS player can do. I consider helicopters playable but less enjoyable and maybe 80% as competitive as HOTAS.
+**How competitive is M&K with HOTAS?** Very competitive for fixed wing aircraft. By the time you are ready to start playing multiplayer, you should be able to do 90%-110% of what a HOTAS player with same hours could do. I consider helicopters playable but less enjoyable and maybe 80% as competitive as HOTAS.
 
-...When it comes to flying and PVP, of course. Keyboard and mouse will never be as immersive as having a physical stick if you're aiming for realism.
+...When it comes to flying and PVP, of course. Doesn't quite have the same immersion factor as a $4000 physical F-16 cockpit.
+
+You can find some clips of me flying with M&K in the [Clips](#clips) section below.
 
 ---
 
-**What hardware do I need for flying?** Mouse and keyboard to get started. I wouldn't play without head tracking also, for this you need a webcam or a phone.
+**What hardware do I need for flying?** Mouse and keyboard to get started. You also want to have head tracking, for this you need a webcam or a phone.
 
 ---
 
@@ -64,21 +67,19 @@ vJoy is a virtual joystick driver that creates virtual joystick devices on your 
 
 <details>
 
-<summary>Fly-by-wire aircraft and helicopters (click for more details)</summary>
-
-## What modules work the best with M&K?
+<summary>Fly-by-wire aircraft and helicopters (click to expand)</summary>
 
 I've tried the following:
 
 - F-16: FBW, works really well.
 - F/A-18: FBW, works really well.
-- A-4E-C: No FBW. You can fly it well, although the slight inaccuracy of virtual joystick placement puts you at a small disadvantage compared to HOTAS players.
+- A-4E-C: No FBW. You can fly it well, although the slight inaccuracy of virtual joystick placement puts you at a small disadvantage compared to HOTAS players and steepens the learning curve.
 
-- UH-60L: Automatic flight control system (AFCS) and the big size makes it really easy to fly with mouse and keyboard. (I'd imagine apache is the same)
-- OH-6A: No flight assistance. Pretty rough, but playable and learnable.
-- UH-1H: No flight assistance. Pretty rough, but playable and learnable.
+- UH-60L: Automatic flight control system (AFCS) and its big size makes it really easy to fly with mouse and keyboard. (I'd imagine apache is the same)
+- OH-6A: No flight assistance. Pretty difficult, but playable and learnable.
+- UH-1H: No flight assistance. Pretty difficult, but playable and learnable.
 
-In general: fixed wing aircraft that have fly-by-wire controls work very well and don't put you at a disadvantage compared to HOTAS players. Older models have a bit steeper learning curve and require more muscle memory and precision so that you don't stall in turns. Helicopters are playable but the older models that lack all flight assistance will require quite a lot of dedication. You'll also need to bind the pedals to your mouse wheel for sufficient yaw control.
+In general: fixed wing aircraft that have fly-by-wire controls work very well and don't put you at a disadvantage compared to HOTAS players. Older models have a bit steeper learning curve and require more muscle memory and precision so that you don't stall in turns. Helicopters are playable but the older models that lack all flight assistance will require quite a lot of dedication. You'll also need to bind the pedals to your mouse wheel for "analog" yaw control.
 
 </details>
 
@@ -92,15 +93,13 @@ In general: fixed wing aircraft that have fly-by-wire controls work very well an
 
 4. Open the script in FreePIE, press F5 to run the script.
 
-5. When you start it, no module is selected. To select F16 module (I use it for both F-16 and FA-18), press `K + 5`. `K + number` allows you to configure different behavior for different aircraft and helicopters, and switch between them on the fly.
+5. When you start it, no module is selected. To select F16 module (I use it for both F-16 and FA-18), press `K + 5`. `K + number` allows you to configure switch between different behavior for different aircraft and helicopters.
    - The "view" debug console shows you some useful variables such as module you have enabled and whether you are in freelook mode
 
-6. Update your DCS keybinds. The script utilises 4+1 keyboard layers that map to virtual joystick buttons, see below for detailed explanation. You need to unbind all the layered keys and then rebind them under the virtual joystick's buttons. For example, if you want to bind `X + W` to RCS up, in DCS unbind `W` from everything, then click add bind under the virtual joystick and press the key combination. You should see `JOY_BTN[NUMBER]` bound.
+6. Exit freelook mode by pressing `GRAVE` key (see [Script layer topology](#script-layer-topology)).
+
+7. Update your DCS keybinds. The script utilises 4+1 keyboard layers that map to virtual joystick buttons, see below for detailed explanation. You need to unbind all the layered keys and then rebind them under the virtual joystick's buttons. For example, if you want to bind `X + W` to RCS up, in DCS unbind `W` and `X` from everything, then click add bind under the virtual joystick and press the key combination. You should see `JOY_BTN[NUMBER]` bound.
    - Keys `WASDQE` in the default layer are used for axis, you can't rebind them without modifying the script.
-
-<!-- ## What controls does a typical HOTAS have?
-
-Skip this section if you are already familiar with typical HOTAS controls. -->
 
 ## Script features & documentation
 
@@ -128,6 +127,7 @@ The script has 3 layers of logic as pictured below: profiles, control modes, and
 2. When you have a profile selected, you can toggle between **freelook mode** and **control mode** using `mouse 5` and `GRAVE`.
    - In freelook mode, your mouse is detached from the virtual joystick, cockpit clickable cursor is enabled and keyboard shortcuts are disabled. Enable freelook if you want to interact with cockpit, look at f10 map or alt-tab out of the game.
    - In control mode, your mouse controls the virtual joystick and keyboard shortcuts are enabled. You can enable pedal control mode.
+   - To make clickable cockpit mode toggle with the freelook mode, `JOY_BTN[30]` is emitted any time you change freelook mode. You can bind it to the enable/disable cockpit interaction key in DCS.
 
 3. Pedal control mode is a submode of control mode where your mouse controls your pedals instead of pitch and roll. Use this for taxi and takeoff. To enable it, press `R` while in control mode. To exit it, press `GRAVE` to go back to default control mode.
 
@@ -144,7 +144,7 @@ The script has 3 layers of logic as pictured below: profiles, control modes, and
 - `shift + A/D` and `shift + F` can be used to trim the roll or reset the trim to center.
 - Small constant rate and medium linear rate center the roll to trim location at all times.
 
-- `mouse wheel` zooms in (smoothly, via `slider` axis). Holding `shift` while zooming controls virtual joystick 2's `slider` axis that can be bound to aircrafts manual zoom knob, for example.
+- `mouse wheel` zooms in (smoothly, via `slider` axis). Holding `shift` while zooming controls virtual joystick 2's `slider` axis that can be bound to aircraft's manual zoom knob, for example.
 
 https://github.com/user-attachments/assets/cd6dbf61-f284-4e64-baed-f5deeb9e877a
 
@@ -170,7 +170,7 @@ The rest of the keyboard uses the default DCS keybinds.
 
 ## Designing the perfect joystick mouse controls
 
-This section is about the theory behind efficient joystick emulation using a mouse. It should also help you adjust the mouse curves for the best experience.
+This section covers the theory behind efficient joystick emulation using a mouse. It should also help you adjust the mouse curves for the best experience.
 
 ### The problem
 
@@ -182,7 +182,7 @@ On the other hand, mouse gives you:
 
 - Configurable sensitivity and higher precision, especially compared to budget joysticks.
 
-An important thing to note here is that in between the center and max limits, the joystick acts pretty much the same as a relative input device like a mouse. If you can get feedback on where your mouse is with respect to the virtual joystick center and max limits, you can do anything that a real joystick can do.
+The problem with the mouse is that you easily lose mental track of where your virtual joystick is. (It's kind of like your aircraft using inertial navigation system (INS) vs GPS for position, which introduces drift). An important thing to note here is that in between the center and max limits, the joystick acts pretty much the same as a relative input device like a mouse. If you can get feedback of where your mouse is with respect to the virtual joystick center and max limits, you can do anything that a real joystick can do.
 
 ### Mapping mouse speed to joystick position
 
@@ -194,7 +194,7 @@ One solution to the lack of physical feedback is to map mouse speed to joystick 
 
 This makes it so that if moving your mouse at X pixels per second corresponds to max joystick deflection, moving the mouse at X/2 pixels per second corresponds to half deflection and letting go of the mouse would center the stick almost immediately.
 
-The problem with this approach is that your brain is way better at controlling how far you've moved your hand than how fast your hand is moving. I tried this approach and while it did fix the lack of feedback, it was way too inaccurate to be able to hold a specific joystick position even after applying smoothing to the speed input.
+The problem with this approach is that your brain is worse at accurately controlling hand speed than hand position or distance moved. I tried this approach and while it did fix the lack of feedback, it was way too inaccurate to be able to hold a specific joystick position even after applying smoothing to the speed input. I was either running out of mousepad or not having enough accuracy.
 
 ### The two solutions
 
@@ -220,13 +220,13 @@ The above curves use example values. To find the optimal curve variables you can
 
 I've found that it's best to use hold-to-enable centering for pitch and always center roll. This is because you want to be able to hold a specific pitch angle in a turn, where as roll never requires sustained hold at high deflection. Rather you'd initiate the turn with a roll and then apply a slight roll together with pitch to sustain it. After a turn you'd hold the pitch centering button while leveling the aircraft to perfectly hit the center of the stick.
 
-If you need to manouver without looking forward, you can do it accurately by holding the pitch centering button so that it acts the same way as roll. Without visual feedback you are limited when it comes to holding a high pitch deflection accurately. This almost never matters though and you can practice it.
+If you need to maneuver without looking forward, you can do it accurately by holding the pitch centering button so that it acts the same way as roll. Without visual feedback you are limited when it comes to holding a high pitch deflection accurately. This almost never matters though and you can practice it.
 
-## Keyboard layers
+## Keyboard layers for the win
 
-When it comes to keybinds, K&M users are in luck. You will never have the issue of your hotas not mapping to your aircraft controls one to one. Your keyboard will never run out of buttons to bind, since you can multiply the number of available keys with layers and modifiers.
+When it comes to keybinds, M&K users are in luck. You will never have the issue of your HOTAS not mapping to your aircraft controls one to one. Your keyboard will never run out of buttons to bind, since you can multiply the number of available keys with layers and modifiers.
 
-I use 4+1 layers for my keybinds in addition to `shift` and `ctrl` used as modifiers occasionally. This means the keys `1-4`, `Q-R` and `A-F` behave differently depending on which of the keys `Z-V` is held down (I have dubbed the 5th layer (when nothing is held) as the _control layer_). In total this gives me 5 x 3 x 4 = 60 buttons that I can press without moving my left hand from the WASD position in addition to couple other non layered keys. Not too shabby.
+I use 4+1 layers for my keybinds in addition to `shift` and `ctrl` used as modifiers occasionally. This means the keys `1-4`, `Q-R` and `A-F` behave differently depending on which of the keys `Z-V` is held down (I have dubbed the 5th layer (when nothing is held) as the _control layer_). In total this gives me 5 x 3 x 4 = 60 buttons that I can press without moving my left hand from the WASD position in addition to a couple of other non-layered keys. Not too shabby.
 
 DCS itself has partial support for layers, but it lacked some logic that I wanted to program in (such as hold to enable layer iirc), so the layered keys actually map to the virtual joystick's `buttons 0-115`. To map keys, you need to a) unbind keys `1-V` from everything in DCS and b) when binding layered keys, bind them under the virtual joystick's buttons by pressing the desired key. Furthermore, the control layer contains axis bindings such as throttle and pedals that you can't rebind without modifying the script, but the rest of the layered keys are free to bind as you wish.
 
@@ -238,31 +238,45 @@ I designed my layout with the following in mind:
 
 - Must be able to press all aircraft HOTAS keys without moving left hand from WASD position
 - Must have enough keys to bind all HOTAS buttons (layers!)
-- Different layers can't have keys that need to be pressed at the same time
+- Keys that need to be pressed at the same time can't be in different layers
 - Must be intuitive to use and remember
 
-### Why two keys for a single toggle (freelook)
+In addition, I try to avoid toggles because they require you to keep mental track of the state of the toggle. Instead I prefer having two different keys for on and off, or hold to enable behavior. This is why freelook mode has two separate keys for on and off instead of a toggle key.
 
 ## Flying helicopters with mouse and keyboard
 
-- Bind pedals to mouse wheel
+- Bind pedals to mouse wheel. It will be unintuitive at first, but necessary for advanced maneuvers and handy when you get used to it.
 - Having a button in your mouse that doubles your dpi when held helps. This way you can have lower sensitivity for precision when hovering and higher sensitivity for forward flight.
-- Helicopters that don't have fly-by-wire where you need to always hold some amount of roll will require you to enable continuous trim for both pitch and roll as opposed to just pitch.
+- Helicopters that don't have fly-by-wire, where you need to always hold some amount of roll, will require you to enable continuous trim for both pitch and roll as opposed to just pitch.
 
 ## Clips
 
 Some clips that demonstrate the accuracy that can be achieved with mouse and keyboard controls:
 
+Combat & maneuvering
+
 https://github.com/user-attachments/assets/d8cfc1b6-5361-40e1-9aa1-a54ff2a8993d
 
 https://github.com/user-attachments/assets/50ba377a-6bc7-4888-86d2-e259131cbe4d
+
+F/A-18 cockpit management
+
+https://github.com/user-attachments/assets/e2ec50a4-362f-47fc-ad5b-f82c37b62a90
+
+UH-60L:
 
 https://github.com/user-attachments/assets/9725a4e2-3b2b-471a-a2ff-d3ec70427224
 
 https://github.com/user-attachments/assets/2a6d1d8a-7f4f-4601-a249-5581a641ccf1
 
+## TODO
+
+- Finalize helicopter profiles
+- Add a way to modify trim with mouse movement
+- Better brake logic?
+
 ## About this repo
 
 Keybind diagrams were created using [keyboard shortcut map maker](https://archie-adams.github.io/keyboard-shortcut-map-maker/).
 
-No AI was used to write this guide. Early versions of the script were AI generated.
+AI prompting was not used to write this guide. Next word prediction was occasionally used for individual words. Early versions of the script had vibe coded parts.
