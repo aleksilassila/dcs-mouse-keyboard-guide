@@ -151,7 +151,7 @@ if starting:
 			
 			self.axis = [self.axis_roll, self.axis_pitch, self.pedal_speed, self.axis_pedal, self.axis_throttle, self.axis_brake_left, self.axis_brake_right, self.axis_zoom, self.axis_zoom_out, self.axis_manual_zoom]
 
-		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False, control_mode=1):
+		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False, control_mode=1, active_layer_offset=0):
 			deltaX = mouse.deltaX
 			deltaY = mouse.deltaY
 
@@ -166,11 +166,6 @@ if starting:
 					self.axis_pedal.set_trim(0 if mouse.getButton(4) else None)
 					self.axis_pedal.move(deltaX / 50)
 
-				# Y axis trim logic
-				# if mouse.getButton(4):  # MOUSE 4
-				# # if mouse.getButton(3):  # MOUSE 3
-				# 	self.axis_pitch.set_trim(0)
-
 				if mouse.getPressed(2): # MOUSE 3
 					if self.axis_zoom.value < 6000 and self.axis_zoom.value > 2000:
 						self.axis_zoom.set_val(-11000)
@@ -182,40 +177,35 @@ if starting:
 					else:
 						self.axis_zoom.move(mouse.wheel)
 
-				if control_layer:
-					# throttle control
-					if keyboard.getKeyDown(Key.W):
-						self.axis_throttle.move(-1)
-					if keyboard.getKeyDown(Key.S):
-						self.axis_throttle.move(1)
-					
-					# pedal control
-					if keyboard.getKeyDown(Key.Q):
-						#if not keyboard.getKeyDown(Key.E):
-						#	self.axis_pedal.move(-2)
-						self.axis_brake_left.move(-2)
-					if keyboard.getKeyDown(Key.E):
-						#if not keyboard.getKeyDown(Key.Q):
-						#	self.axis_pedal.move(2)
-						self.axis_brake_right.move(-2)
-					
-					if keyboard.getKeyDown(Key.A):
-						if shift_pressed:
-							self.axis_roll.offset_trim(-10)
-						else:
-							self.axis_pedal.offset_trim(-self.axis_pedal.sensitivity * self.pedal_speed.value)
-							self.pedal_speed.move(1)
-					if keyboard.getKeyDown(Key.D):
-						if shift_pressed:
-							self.axis_roll.offset_trim(10)
-						else:
-							self.axis_pedal.offset_trim(self.axis_pedal.sensitivity * self.pedal_speed.value)
-							self.pedal_speed.move(1)
-					if keyboard.getKeyDown(Key.F):
-						if shift_pressed:
-							self.axis_roll.set_trim(0)
-						else:
-							self.axis_pedal.set_trim(0)
+				# throttle control
+				if layer_keys[Key.W].was_layer_pressed(0):
+					self.axis_throttle.move(-1)
+				if layer_keys[Key.S].was_layer_pressed(0):
+					self.axis_throttle.move(1)
+				
+				# pedal control
+				if layer_keys[Key.Q].was_layer_pressed(0):
+					self.axis_brake_left.move(-2)
+				if layer_keys[Key.E].was_layer_pressed(0):
+					self.axis_brake_right.move(-2)
+				
+				if layer_keys[Key.A].was_layer_pressed(0):
+					if shift_pressed:
+						self.axis_roll.offset_trim(-10)
+					else:
+						self.axis_pedal.offset_trim(-self.axis_pedal.sensitivity * self.pedal_speed.value)
+						self.pedal_speed.move(1)
+				if layer_keys[Key.D].was_layer_pressed(0):
+					if shift_pressed:
+						self.axis_roll.offset_trim(10)
+					else:
+						self.axis_pedal.offset_trim(self.axis_pedal.sensitivity * self.pedal_speed.value)
+						self.pedal_speed.move(1)
+				if layer_keys[Key.F].was_layer_pressed(0):
+					if shift_pressed:
+						self.axis_roll.set_trim(0)
+					else:
+						self.axis_pedal.set_trim(0)
 
 			self.axis_zoom_out.trim_value = self.axis_zoom.value
 
@@ -284,7 +274,7 @@ if starting:
 			
 			self.axis = [self.axis_roll, self.axis_pitch, self.axis_pedal, self.throttle_speed, self.axis_throttle1, self.axis_throttle2]
 
-		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False, control_mode=1):
+		def update(self, freelook=False, control_layer=False, alt_pressed=False, shift_pressed=False, control_mode=1, active_layer_offset=0):
 			deltaX = mouse.deltaX
 			deltaY = mouse.deltaY
 
@@ -389,65 +379,26 @@ if starting:
 			self.pedal_sensitivity = 350
 
 	class LayerKey:
-		def __init__(self, key, index):
+		def __init__(self, key, index, ignored_offsets=[0]):
 			self.key = key
 			self.index = index
+			self.ignored_offsets = ignored_offsets
 			self.active_offset = 0
 			self.was_pressed = False
 	
-		def update(self, offset):
-			pressed = keyboard.getKeyDown(self.key)
+		def was_layer_pressed(self, active_offset):
+			return self.was_pressed and self.active_offset == active_offset
 
-			if not self.was_pressed and pressed:
-				self.active_offset = 0
+		def update(self, active_offset, freelook=False):
+			pressed = keyboard.getKeyDown(self.key) and not freelook
 
-			if not pressed:
-				self.active_offset = offset
+			if not self.was_pressed:
+				self.active_offset = active_offset
 
-			vJoy[0].setButton(self.index + self.active_offset, pressed)
+			if self.active_offset not in self.ignored_offsets:
+				vJoy[0].setButton(self.index + self.active_offset, pressed)
 
-	# class Layer:
-	# 	def __init__(self, range_start = 0, key = None):
-	# 		self.range_start = range_start
-	# 		self.key = key
-	# 		self.active = False
-
-	# 		self.layer_keys = [
-	# 			Key.W,
-	# 			Key.S,
-	# 			Key.A,
-	# 			Key.D,
-	# 			Key.Q,
-	# 			Key.E,
-	# 			Key.F,
-	# 			Key.R,
-	# 			# Key.G,
-	# 			# Key.T,
-	# 			Key.D1,
-	# 			Key.D2,
-	# 			Key.D3,
-	# 			Key.D4,
-	# 			# Key.D5,
-	# 		]
-		
-	# 	def update(self, can_activate):
-	# 		if can_activate and keyboard.getKeyDown(self.key):
-	# 			vJoy[0].setButton(self.range_start, keyboard.getKeyDown(Key.W))
-	# 			vJoy[0].setButton(self.range_start + 1, keyboard.getKeyDown(Key.S))
-	# 			vJoy[0].setButton(self.range_start + 2, keyboard.getKeyDown(Key.A))
-	# 			vJoy[0].setButton(self.range_start + 3, keyboard.getKeyDown(Key.D))
-	# 			vJoy[0].setButton(self.range_start + 4, keyboard.getKeyDown(Key.Q))
-	# 			vJoy[0].setButton(self.range_start + 5, keyboard.getKeyDown(Key.E))
-	# 			vJoy[0].setButton(self.range_start + 6, keyboard.getKeyDown(Key.F))
-	# 			vJoy[0].setButton(self.range_start + 7, keyboard.getKeyDown(Key.R))
-	# 			# vJoy[0].setButton(self.range_start + 8, keyboard.getKeyDown(Key.G))
-	# 			# vJoy[0].setButton(self.range_start + 9, keyboard.getKeyDown(Key.T))
-	# 			vJoy[0].setButton(self.range_start + 10, keyboard.getKeyDown(Key.D1))
-	# 			vJoy[0].setButton(self.range_start + 11, keyboard.getKeyDown(Key.D2))
-	# 			vJoy[0].setButton(self.range_start + 12, keyboard.getKeyDown(Key.D3))
-	# 			vJoy[0].setButton(self.range_start + 13, keyboard.getKeyDown(Key.D4))
-	# 			# vJoy[0].setButton(self.range_start + 14, keyboard.getKeyDown(Key.D5))
-				
+			self.was_pressed = pressed
 
 	profiles = dict([
 		("F-16C", F16CProfile()),
@@ -462,11 +413,37 @@ if starting:
 
 	active_profile = None
 
+	layer_keys = {
+		Key.W: LayerKey(Key.W, 0),
+		Key.S: LayerKey(Key.S, 1),
+		Key.A: LayerKey(Key.A, 2),
+		Key.D: LayerKey(Key.D, 3),
+		Key.Q: LayerKey(Key.Q, 4),
+		Key.E: LayerKey(Key.E, 5),
+		Key.F: LayerKey(Key.F, 6),
+		Key.R: LayerKey(Key.R, 7),
+		# Key.G: LayerKey(Key.G, 8),
+		# Key.T: LayerKey(Key.T, 9),
+		Key.D1: LayerKey(Key.D1, 10, ignored_offsets=[]),
+		Key.D2: LayerKey(Key.D2, 11, ignored_offsets=[]),
+		Key.D3: LayerKey(Key.D3, 12, ignored_offsets=[]),
+		Key.D4: LayerKey(Key.D4, 13, ignored_offsets=[]),
+		Key.D5: LayerKey(Key.D5, 14, ignored_offsets=[40, 60, 80, 100]),
+		Key.D6: LayerKey(Key.D6, 15, ignored_offsets=[40, 60, 80, 100]),
+		Key.D7: LayerKey(Key.D7, 16, ignored_offsets=[40, 60, 80, 100]),
+		Key.D8: LayerKey(Key.D8, 17, ignored_offsets=[40, 60, 80, 100]),
+		Key.D9: LayerKey(Key.D9, 18, ignored_offsets=[40, 60, 80, 100]),
+		Key.D0: LayerKey(Key.D0, 19, ignored_offsets=[40, 60, 80, 100]),
+	}
+
+	active_layer_offset = 0
+
+
 # Alt
 alt_pressed = keyboard.getKeyDown(Key.LeftAlt) or keyboard.getKeyDown(Key.RightAlt)
 shift_pressed = keyboard.getKeyDown(Key.LeftShift) or keyboard.getKeyDown(Key.RightShift)
 
-# Alt toggle
+# Freelook / Control mode toggle
 if mouse.getPressed(3):
 	if not freelook_toggle:
 		vJoy[0].setPressed(29)
@@ -482,6 +459,10 @@ elif keyboard.getPressed(Key.R) and not freelook_toggle:
 
 control_layer = not keyboard.getKeyDown(Key.Z) and not keyboard.getKeyDown(Key.X) and not keyboard.getKeyDown(Key.C) and not keyboard.getKeyDown(Key.V)
 freelook = alt_pressed or freelook_toggle
+
+# K Toggle
+if keyboard.getPressed(Key.K):
+	k_toggle = not k_toggle
 
 if k_toggle:
 	# K Binds
@@ -513,102 +494,29 @@ if k_toggle:
 			k_toggle = False
 			break
 
+# Keyboard layers
 if not k_toggle and not freelook:
-	if keyboard.getKeyDown(Key.Z): # 40-
-		vJoy[0].setButton(40, keyboard.getKeyDown(Key.W))
-		vJoy[0].setButton(41, keyboard.getKeyDown(Key.S))
-		vJoy[0].setButton(42, keyboard.getKeyDown(Key.A))
-		vJoy[0].setButton(43, keyboard.getKeyDown(Key.D))
-		vJoy[0].setButton(44, keyboard.getKeyDown(Key.Q))
-		vJoy[0].setButton(45, keyboard.getKeyDown(Key.E))
-		vJoy[0].setButton(46, keyboard.getKeyDown(Key.F))
-		vJoy[0].setButton(47, keyboard.getKeyDown(Key.R))
-		# vJoy[0].setButton(48, keyboard.getKeyDown(Key.G))
-		# vJoy[0].setButton(49, keyboard.getKeyDown(Key.T))
-		vJoy[0].setButton(50, keyboard.getKeyDown(Key.D1))
-		vJoy[0].setButton(51, keyboard.getKeyDown(Key.D2))
-		vJoy[0].setButton(52, keyboard.getKeyDown(Key.D3))
-		vJoy[0].setButton(53, keyboard.getKeyDown(Key.D4))
-		# vJoy[0].setButton(54, keyboard.getKeyDown(Key.D5))
-	elif keyboard.getKeyDown(Key.X): # 60-
-		vJoy[0].setButton(60, keyboard.getKeyDown(Key.W))
-		vJoy[0].setButton(61, keyboard.getKeyDown(Key.S))
-		vJoy[0].setButton(62, keyboard.getKeyDown(Key.A))
-		vJoy[0].setButton(63, keyboard.getKeyDown(Key.D))
-		vJoy[0].setButton(64, keyboard.getKeyDown(Key.Q))
-		vJoy[0].setButton(65, keyboard.getKeyDown(Key.E))
-		vJoy[0].setButton(66, keyboard.getKeyDown(Key.F))
-		vJoy[0].setButton(67, keyboard.getKeyDown(Key.R))
-		# vJoy[0].setButton(68, keyboard.getKeyDown(Key.G))
-		# vJoy[0].setButton(69, keyboard.getKeyDown(Key.T))
-		vJoy[0].setButton(70, keyboard.getKeyDown(Key.D1))
-		vJoy[0].setButton(71, keyboard.getKeyDown(Key.D2))
-		vJoy[0].setButton(72, keyboard.getKeyDown(Key.D3))
-		vJoy[0].setButton(73, keyboard.getKeyDown(Key.D4))
-		# vJoy[0].setButton(74, keyboard.getKeyDown(Key.D5))
-	elif keyboard.getKeyDown(Key.C): # 80-
-		vJoy[0].setButton(80, keyboard.getKeyDown(Key.W))
-		vJoy[0].setButton(81, keyboard.getKeyDown(Key.S))
-		vJoy[0].setButton(82, keyboard.getKeyDown(Key.A))
-		vJoy[0].setButton(83, keyboard.getKeyDown(Key.D))
-		vJoy[0].setButton(84, keyboard.getKeyDown(Key.Q))
-		vJoy[0].setButton(85, keyboard.getKeyDown(Key.E))
-		vJoy[0].setButton(86, keyboard.getKeyDown(Key.F))
-		vJoy[0].setButton(87, keyboard.getKeyDown(Key.R))
-		# vJoy[0].setButton(88, keyboard.getKeyDown(Key.G))
-		# vJoy[0].setButton(89, keyboard.getKeyDown(Key.T))
-		vJoy[0].setButton(90, keyboard.getKeyDown(Key.D1))
-		vJoy[0].setButton(91, keyboard.getKeyDown(Key.D2))
-		vJoy[0].setButton(92, keyboard.getKeyDown(Key.D3))
-		vJoy[0].setButton(93, keyboard.getKeyDown(Key.D4))
-		# vJoy[0].setButton(94, keyboard.getKeyDown(Key.D5))
-	elif keyboard.getKeyDown(Key.V): # 100-
-		vJoy[0].setButton(100, keyboard.getKeyDown(Key.W))
-		vJoy[0].setButton(101, keyboard.getKeyDown(Key.S))
-		vJoy[0].setButton(102, keyboard.getKeyDown(Key.A))
-		vJoy[0].setButton(103, keyboard.getKeyDown(Key.D))
-		vJoy[0].setButton(104, keyboard.getKeyDown(Key.Q))
-		vJoy[0].setButton(105, keyboard.getKeyDown(Key.E))
-		vJoy[0].setButton(106, keyboard.getKeyDown(Key.F))
-		vJoy[0].setButton(107, keyboard.getKeyDown(Key.R))
-		# vJoy[0].setButton(108, keyboard.getKeyDown(Key.G))
-		# vJoy[0].setButton(109, keyboard.getKeyDown(Key.T))
-		vJoy[0].setButton(110, keyboard.getKeyDown(Key.D1))
-		vJoy[0].setButton(111, keyboard.getKeyDown(Key.D2))
-		vJoy[0].setButton(112, keyboard.getKeyDown(Key.D3))
-		vJoy[0].setButton(113, keyboard.getKeyDown(Key.D4))
-		# vJoy[0].setButton(114, keyboard.getKeyDown(Key.D5))
-
-if control_layer or k_toggle or freelook:
-	for i in range(40, 128):
-		vJoy[0].setButton(i, False)
-
-# Default layer
-if control_layer and not k_toggle and not freelook:
-	vJoy[0].setButton(0, keyboard.getKeyDown(Key.D0))
-	vJoy[0].setButton(1, keyboard.getKeyDown(Key.D1))
-	vJoy[0].setButton(2, keyboard.getKeyDown(Key.D2))
-	vJoy[0].setButton(3, keyboard.getKeyDown(Key.D3))
-	vJoy[0].setButton(4, keyboard.getKeyDown(Key.D4))
-	vJoy[0].setButton(5, keyboard.getKeyDown(Key.D5))
-	vJoy[0].setButton(6, keyboard.getKeyDown(Key.D6))
-	vJoy[0].setButton(7, keyboard.getKeyDown(Key.D7))
-	vJoy[0].setButton(8, keyboard.getKeyDown(Key.D8))
-	vJoy[0].setButton(9, keyboard.getKeyDown(Key.D9))
-	vJoy[0].setButton(10, mouse.getButton(3))
-	vJoy[0].setButton(11, keyboard.getKeyDown(Key.R))
+	if keyboard.getKeyDown(Key.Z):
+		active_layer_offset = 40
+	elif keyboard.getKeyDown(Key.X):
+		active_layer_offset = 60
+	elif keyboard.getKeyDown(Key.C):
+		active_layer_offset = 80
+	elif keyboard.getKeyDown(Key.V):
+		active_layer_offset = 100
+	else:
+		active_layer_offset = 0
 else:
-	for i in range(0, 10):
-		vJoy[0].setButton(i, False)
-	vJoy[0].setButton(10, False)
+	active_layer_offset = 0
 
-if keyboard.getPressed(Key.K):
-	k_toggle = not k_toggle
+for layer_key in layer_keys.values():
+	layer_key.update(active_layer_offset, freelook=(freelook or k_toggle))
+
+if active_profile is not None:
+	active_profile.update(freelook=freelook, alt_pressed=alt_pressed, shift_pressed=shift_pressed, control_layer=control_layer, control_mode=control_mode, active_layer_offset=active_layer_offset)
 
 diagnostics.watch(k_toggle)
 diagnostics.watch(freelook)
 diagnostics.watch(control_layer)
 diagnostics.watch(active_profile.__class__.__name__ if active_profile else None)
-
-if active_profile is not None:
-	active_profile.update(freelook=freelook, alt_pressed=alt_pressed, shift_pressed=shift_pressed, control_layer=control_layer, control_mode=control_mode)
+diagnostics.watch(active_layer_offset)
