@@ -4,6 +4,8 @@ if starting:
 	system.setThreadTiming(TimingTypes.HighresSystemTimer)
 	system.threadExecutionInterval = 20
 
+	tick = 0
+
 	freelook_toggle = True
 	k_toggle = False
 	control_mode = 1
@@ -13,20 +15,21 @@ if starting:
 		return y_min + (value - x_min) * (y_max - y_min) / (x_max - x_min)
 	
 	class VirtualAxis:
-		def __init__(self, axis_max, sensitivity=1.0, trim_value=None, linear_rate=0.0, constant_rate=0.0):
+		def __init__(self, axis_max, sensitivity=1.0, trim_value=None, linear_rate=0.0, constant_rate=0.0, invert_linear_curve=False):
 			self.value = 0.0
 			self.trim_value = trim_value
 			self.axis_max = float(axis_max)
 			self.sensitivity = sensitivity
 			self.linear_rate = linear_rate
 			self.constant_rate = constant_rate
+			self.invert_linear_curve = invert_linear_curve
 			self.did_move = False
 
 		def move(self, delta):
 			trim_diff = (self.trim_value - self.value) if self.trim_value is not None else 0
 
 			constant_component = self.constant_rate * (1 if trim_diff > 0 else -1) if self.constant_rate != 0 else 0
-			linear_component = trim_diff * self.linear_rate
+			linear_component = trim_diff * self.linear_rate if not self.invert_linear_curve else (axis_max - abs(trim_diff)) * self.linear_rate if trim_diff > 0 else (axis_max - abs(trim_diff)) * self.linear_rate * -1 if trim_diff < 0 else 0
 
 			self.value = self.value + delta * self.sensitivity + min(abs(trim_diff), max(-abs(trim_diff), linear_component + constant_component))
 			self.did_move = True
@@ -126,6 +129,10 @@ if starting:
 			self.roll_constant_rate = 25
 			self.brakes_multiplier = 1
 
+			# Sticky mouse 4
+			self.was_mouse5_pressed = False
+			self.hold_mouse5_until = 0
+
 		def setup(self):
 			self.axis_pitch = VirtualAxis(axis_max, sensitivity=8, linear_rate=0.015, constant_rate=15)
 			self.axis_roll = VirtualAxis(axis_max, sensitivity=8, linear_rate=0.015, constant_rate=15, trim_value=0.0)
@@ -156,15 +163,22 @@ if starting:
 			deltaY = mouse.deltaY
 
 			if not freelook:
+				# Sticky mouse 5
+				mouse5_pressed = mouse.getButton(4) or tick < self.hold_mouse5_until
+				if mouse.getButton(4): # mouse5_pressed and not self.was_mouse5_pressed:
+					self.hold_mouse5_until = tick + 50 # 1000ms
+				self.was_mouse5_pressed = mouse5_pressed
+
 				# mouse axis
 				if control_mode == 1:
-					self.axis_pitch.set_trim(0 if mouse.getButton(4) else None)
+					self.axis_pitch.set_trim(0 if mouse5_pressed else None)
 					self.axis_roll.move(deltaX)
 					self.axis_pitch.move(-deltaY)
 				elif control_mode == 2:
 					self.axis_pitch.set_trim(0)
-					self.axis_pedal.set_trim(0 if mouse.getButton(4) else None)
+					self.axis_pedal.set_trim(0 if mouse5_pressed else None)
 					self.axis_pedal.move(deltaX / 50)
+
 
 				if mouse.getPressed(2): # MOUSE 3
 					if self.axis_zoom.value < 6000 and self.axis_zoom.value > 2000:
@@ -520,3 +534,4 @@ diagnostics.watch(freelook)
 diagnostics.watch(control_layer)
 diagnostics.watch(active_profile.__class__.__name__ if active_profile else None)
 diagnostics.watch(active_layer_offset)
+tick += 1
