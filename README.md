@@ -92,11 +92,11 @@ In general: fixed wing aircraft that have fly-by-wire controls work very well an
 
 4. Open the script in FreePIE, press F5 to run the script.
 
-5. When you start it, no module is selected. To select F16 module (I use it for both F-16 and FA-18), press K+5. K+number allows you to configure different behavior for different aircraft and helicopters, and switch between them on the fly.
+5. When you start it, no module is selected. To select F16 module (I use it for both F-16 and FA-18), press `K + 5`. `K + number` allows you to configure different behavior for different aircraft and helicopters, and switch between them on the fly.
    - The "view" debug console shows you some useful variables such as module you have enabled and whether you are in freelook mode
 
-6. Update your DCS keybinds. The script utilises 4+1 keyboard layers that map to virtual joystick buttons, see below for detailed explanation. You need to unbind all the layered keys and then rebind them under the virtual joystick's buttons. For example, if you want to bind X+W to RCS up, in DCS unbind W from everything, then click add bind under the virtual joystick and press the key combination. You should see JOY_BTN[NUMBER] bound.
-   - Keys WASDQE in the default layer are used for axis, you can't rebind them without modifying the script.
+6. Update your DCS keybinds. The script utilises 4+1 keyboard layers that map to virtual joystick buttons, see below for detailed explanation. You need to unbind all the layered keys and then rebind them under the virtual joystick's buttons. For example, if you want to bind `X + W` to RCS up, in DCS unbind `W` from everything, then click add bind under the virtual joystick and press the key combination. You should see `JOY_BTN[NUMBER]` bound.
+   - Keys `WASDQE` in the default layer are used for axis, you can't rebind them without modifying the script.
 
 <!-- ## What controls does a typical HOTAS have?
 
@@ -108,15 +108,15 @@ This section explains in detail how to use the script.
 
 ### Script layer topology
 
-The script has 3 layers of logic as pictured below: profiles, control modes, and Z-V keyboard layers.
+The script has 3 layers of logic as pictured below: profiles, control modes, and `Z-V` keyboard layers.
 
 ```
 .
-├── UH-60L (K+1)
+├── UH-60L (`K+1`)
 │   └── ...
-├── UH-1H (K+3)
+├── UH-1H (`K+3`)
 │   └── ...
-├── F-16/FA-18 (K+5)
+├── F-16/FA-18 (`K+5`)
 │   ├── "Freelook" mode (Mouse 5)
 │   └── Control mode (GRAVE key, next to 1 key)
 │       ├── Pedal control mode (R, GRAVE to exit to default control mode)
@@ -125,34 +125,36 @@ The script has 3 layers of logic as pictured below: profiles, control modes, and
 
 1. **Profiles** are the top level layers. Each profile has different mouse curves and control behavior for different aircraft. You can switch between profiles on the fly by pressing `K + number`. When you start the script, no profile is selected.
 
-2. When you have a profile selected, you can toggle between **freelook mode** and **control mode** using `Mouse 5` and `GRAVE`.
+2. When you have a profile selected, you can toggle between **freelook mode** and **control mode** using `mouse 5` and `GRAVE`.
    - In freelook mode, your mouse is detached from the virtual joystick, cockpit clickable cursor is enabled and keyboard shortcuts are disabled. Enable freelook if you want to interact with cockpit, look at f10 map or alt-tab out of the game.
    - In control mode, your mouse controls the virtual joystick and keyboard shortcuts are enabled. You can enable pedal control mode.
 
 3. Pedal control mode is a submode of control mode where your mouse controls your pedals instead of pitch and roll. Use this for taxi and takeoff. To enable it, press `R` while in control mode. To exit it, press `GRAVE` to go back to default control mode.
 
-4. **Z-V keyboard layers** can be accessed while in control mode.
+4. **`Z-V` keyboard layers** can be accessed while in control mode.
 
 ### Aircraft mouse behavior and keybinds
 
 **Mouse curves and behavior**
 
 - Pitch is always trimmed, in other words when you don't move your mouse, the virtual joystick's pitch will stay where you left it.
-- When Mouse 4 is held, pitch is trimmed to center. Use this when you want to move your pitch perfectly center.
+- When `mouse 4` is held, pitch is trimmed to center. Use this when you want to move your pitch perfectly center. Key is sticky for 1s after release.
 
 - Roll is always trimmed to center.
-- shift + A/D and shift + F can be used to trim the roll or reset the trim to center.
+- `shift + A/D` and `shift + F` can be used to trim the roll or reset the trim to center.
 - Small constant rate and medium linear rate center the roll to trim location at all times.
+
+- `mouse wheel` zooms in (smoothly, via `slider` axis). Holding `shift` while zooming controls virtual joystick 2's `slider` axis that can be bound to aircrafts manual zoom knob, for example.
 
 https://github.com/user-attachments/assets/cd6dbf61-f284-4e64-baed-f5deeb9e877a
 
 **Mouse keybinds**
 
-- Mouse 1: gun
-- Mouse 2 (F-16): enable btn (held)
-- Mouse wheel: zoom, press toggles between 2 zoom levels
-- Mouse 4: hold to trim pitch to center, or trim pedals to center if in pedal control mode
-- Mouse 5: enter freelook mode (disable all keybinds, detach mouse from joystick, enable clickable cockpit)
+- `mouse 1`: gun
+- `mouse 2` (F-16): enable btn (held)
+- `mouse wheel`: press toggles between 2 zoom level presets
+- `mouse 4`: hold to trim pitch to center, or trim pedals to center if in pedal control mode
+- `mouse 5`: enter freelook mode (disable all keybinds, detach mouse from joystick, enable clickable cockpit)
 
 ### F-16 keybinds (wip)
 
@@ -163,13 +165,6 @@ https://github.com/user-attachments/assets/cd6dbf61-f284-4e64-baed-f5deeb9e877a
 The rest of the keyboard uses the default DCS keybinds.
 
 ### FA-18 keybinds (more wip)
-
-- CTRL + T: 3-way flaps AUTO -> HALF -> FULL
-- Shift + T: 3-way flaps FULL -> HALF -> AUTO
-- T: 3-way flaps to AUTO
-
-- CTRL + B: hold to extend speed brake
-- SHIFT + B: press to retract speed brake
 
 ![FA-18 keybinds](assets/fa18.png)
 
@@ -231,9 +226,9 @@ If you need to manouver without looking forward, you can do it accurately by hol
 
 When it comes to keybinds, K&M users are in luck. You will never have the issue of your hotas not mapping to your aircraft controls one to one. Your keyboard will never run out of buttons to bind, since you can multiply the number of available keys with layers and modifiers.
 
-I use 4+1 layers for my keybinds in addition to shift and ctrl used as modifiers occasionally. This means the keys 1-4, Q-R and A-F behave differently depending on which of the keys Z-V is held down (I have dubbed the 5th layer (when nothing is held) as the _control layer_). In total this gives me 5 x 3 x 4 = 60 buttons that I can press without moving my left hand from the WASD position in addition to couple other non layered keys. Not too shabby.
+I use 4+1 layers for my keybinds in addition to `shift` and `ctrl` used as modifiers occasionally. This means the keys `1-4`, `Q-R` and `A-F` behave differently depending on which of the keys `Z-V` is held down (I have dubbed the 5th layer (when nothing is held) as the _control layer_). In total this gives me 5 x 3 x 4 = 60 buttons that I can press without moving my left hand from the WASD position in addition to couple other non layered keys. Not too shabby.
 
-DCS itself has partial support for layers, but it lacked some logic that I wanted to program in (such as hold to enable layer iirc), so the layered keys actually map to the virtual joystick's buttons 0-115. To map keys, you need to a) unbind keys 1-V from everything in DCS and b) when binding layered keys, bind them under the virtual joystick's buttons by pressing the desired key. Furthermore, the control layer contains axis bindings such as throttle and pedals that you can't rebind without modifying the script, but the rest of the layered keys are free to bind as you wish.
+DCS itself has partial support for layers, but it lacked some logic that I wanted to program in (such as hold to enable layer iirc), so the layered keys actually map to the virtual joystick's `buttons 0-115`. To map keys, you need to a) unbind keys `1-V` from everything in DCS and b) when binding layered keys, bind them under the virtual joystick's buttons by pressing the desired key. Furthermore, the control layer contains axis bindings such as throttle and pedals that you can't rebind without modifying the script, but the rest of the layered keys are free to bind as you wish.
 
 The keybinds are not complete and contain only the bare necessities to fly and fight. You might want to bind more of the buttons.
 
